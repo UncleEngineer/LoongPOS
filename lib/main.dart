@@ -60,7 +60,7 @@ class ProductListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('All Products')),
+      appBar: AppBar(title: const Text('รายการสินค้าทั้งหมด')),
       body: ListView.builder(
         itemCount: products.length,
         itemBuilder: (_, i) {
@@ -108,6 +108,65 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  void _editQuantity(BuildContext dialogContext, int index) {
+    final item = cart[index];
+    final controller = TextEditingController(text: item.quantity.toString());
+
+    showDialog(
+      context: dialogContext,
+      builder: (BuildContext context) => AlertDialog(
+        title: Text('แก้ไขจำนวน "${item.product.name}"'),
+        content: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.remove),
+              onPressed: () {
+                int current = int.tryParse(controller.text) ?? item.quantity;
+                if (current > 1) {
+                  controller.text = (current - 1).toString();
+                }
+              },
+            ),
+            SizedBox(
+              width: 60,
+              child: TextField(
+                controller: controller,
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () {
+                int current = int.tryParse(controller.text) ?? item.quantity;
+                controller.text = (current + 1).toString();
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: const Text('ยกเลิก'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            child: const Text('ตกลง'),
+            onPressed: () {
+              setState(() {
+                item.quantity = int.tryParse(controller.text) ?? item.quantity;
+              });
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   late Database db;
   List<Product> products = [];
   List<CartItem> cart = [];
@@ -154,43 +213,42 @@ class _HomePageState extends State<HomePage> {
 
     showDialog(
       context: context,
-      builder:
-          (BuildContext dialogContext) => AlertDialog(
-            title: const Text('Edit Product'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                ),
-                TextField(
-                  controller: priceController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Price'),
-                ),
-              ],
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Text('แก้ไขรายการสินค้า'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'ชื่อสินค้า'),
             ),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  final name = nameController.text;
-                  final price = double.tryParse(priceController.text) ?? 0;
-                  if (name.isNotEmpty && price > 0) {
-                    await db.update(
-                      'products',
-                      {'name': name, 'price': price},
-                      where: 'id = ?',
-                      whereArgs: [product.id],
-                    );
-                    _loadProducts();
-                    Navigator.of(dialogContext).pop();
-                  }
-                },
-                child: const Text('Save'),
-              ),
-            ],
+            TextField(
+              controller: priceController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'ราคา'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final name = nameController.text;
+              final price = double.tryParse(priceController.text) ?? 0;
+              if (name.isNotEmpty && price > 0) {
+                await db.update(
+                  'products',
+                  {'name': name, 'price': price},
+                  where: 'id = ?',
+                  whereArgs: [product.id],
+                );
+                _loadProducts();
+                Navigator.of(dialogContext).pop();
+              }
+            },
+            child: const Text('Save'),
           ),
+        ],
+      ),
     );
   }
 
@@ -254,37 +312,36 @@ class _HomePageState extends State<HomePage> {
     final priceController = TextEditingController();
     showDialog(
       context: context,
-      builder:
-          (BuildContext dialogContext) => AlertDialog(
-            title: const Text('Add Product'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                ),
-                TextField(
-                  controller: priceController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Price'),
-                ),
-              ],
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Text('เพิ่มสินค้า'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'ชื่อสินค้า'),
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  final name = nameController.text;
-                  final price = double.tryParse(priceController.text) ?? 0;
-                  if (name.isNotEmpty && price > 0) {
-                    _addProduct(name, price);
-                    Navigator.of(dialogContext).pop();
-                  }
-                },
-                child: const Text('Add'),
-              ),
-            ],
+            TextField(
+              controller: priceController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'ราคา'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              final name = nameController.text;
+              final price = double.tryParse(priceController.text) ?? 0;
+              if (name.isNotEmpty && price > 0) {
+                _addProduct(name, price);
+                Navigator.of(dialogContext).pop();
+              }
+            },
+            child: const Text('เพิ่ม'),
           ),
+        ],
+      ),
     );
   }
 
@@ -297,22 +354,29 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('POS System'),
+        title: const Text('Uncle POS'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.print),
+            onPressed: cart.isEmpty
+                ? null
+                : () async {
+                    await _printReceipt(); // ต้องใส่ await!
+                    setState(() => cart.clear());
+                  },
+          ),
+          IconButton(
             icon: const Icon(Icons.view_list),
-            onPressed:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => ProductListPage(
-                          products: products,
-                          onEdit: (product) => _editProduct(context, product),
-                          onDelete: _deleteProduct,
-                        ),
-                  ),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProductListPage(
+                  products: products,
+                  onEdit: (product) => _editProduct(context, product),
+                  onDelete: _deleteProduct,
                 ),
+              ),
+            ),
           ),
           IconButton(
             onPressed: () => _showAddProductDialog(context),
@@ -328,10 +392,9 @@ class _HomePageState extends State<HomePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  onPressed:
-                      currentPage > 0
-                          ? () => setState(() => currentPage--)
-                          : null,
+                  onPressed: currentPage > 0
+                      ? () => setState(() => currentPage--)
+                      : null,
                   icon: const Icon(Icons.chevron_left),
                 ),
                 for (int i = 0; i < pageCount; i++)
@@ -348,10 +411,9 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 IconButton(
-                  onPressed:
-                      currentPage < pageCount - 1
-                          ? () => setState(() => currentPage++)
-                          : null,
+                  onPressed: currentPage < pageCount - 1
+                      ? () => setState(() => currentPage++)
+                      : null,
                   icon: const Icon(Icons.chevron_right),
                 ),
               ],
@@ -365,24 +427,23 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.all(8),
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
-            children:
-                pageProducts.map((product) {
-                  return SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueGrey,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: () => _addToCart(product),
-                      child: Center(
-                        child: Text(product.name, textAlign: TextAlign.center),
-                      ),
+            children: pageProducts.map((product) {
+              return SizedBox(
+                height: 24,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueGrey,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  );
-                }).toList(),
+                  ),
+                  onPressed: () => _addToCart(product),
+                  child: Center(
+                    child: Text(product.name, textAlign: TextAlign.center),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
           const Divider(),
           Expanded(
@@ -392,8 +453,9 @@ class _HomePageState extends State<HomePage> {
                 final item = cart[i];
                 return ListTile(
                   title: Text(item.product.name),
-                  subtitle: Text("Quantity: ${item.quantity}"),
+                  subtitle: Text("จำนวน: ${item.quantity}"),
                   trailing: Text(item.total.toStringAsFixed(2)),
+                  onTap: () => _editQuantity(context, i),
                 );
               },
             ),
@@ -410,16 +472,15 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed:
-                      cart.isEmpty
-                          ? null
-                          : () async {
-                            await _printReceipt(); // ต้องใส่ await!
-                            setState(() => cart.clear());
-                          },
-                  child: const Text('Print Receipt'),
-                ),
+                // ElevatedButton(
+                //   onPressed: cart.isEmpty
+                //       ? null
+                //       : () async {
+                //           await _printReceipt(); // ต้องใส่ await!
+                //           setState(() => cart.clear());
+                //         },
+                //   child: const Text('พิมพ์บิล'),
+                // ),
               ],
             ),
           ),
